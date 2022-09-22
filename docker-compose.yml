@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  quote_web:
+    build: .
+    ports:
+      - "8080:8080"
+    command: >
+      sh -c "mvn -Duser.home=/var/maven clean"
+    volumes:
+      - C:\Users\INV-0200\.m2:/var/maven/.m2
+      - .:/app
+    environment:
+      MAVEN_CONFIG: /var/maven/.m2
+    networks:
+      - stock_quote_network
+    depends_on:
+      - quote_redis
+
+  quote_redis:
+    image: redis:7.0.4
+    ports:
+      - "6379:6379"
+    networks:
+      - stock_quote_network
+
+networks:
+  stock_quote_network:
+    driver: bridge
