@@ -13,6 +13,7 @@ public class SpringSecurityEncryptor implements Encryptor {
     private final BytesEncryptor encryptor;
 
     public SpringSecurityEncryptor(Environment env) {
+        log.info("Using SpringSecurityEncryptor");
         var password = env.getProperty("app.encryption.password");
         assert password != null;
         encryptor = Encryptors.standard(password, KeyGenerators.string().generateKey());

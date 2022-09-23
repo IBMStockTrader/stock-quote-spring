@@ -47,7 +47,7 @@ public class QuoteController {
             fillStockQuoteTestFunctions();
     }
 
-    @GetMapping("/cached-quotes")
+    @GetMapping("/")
     public Quote[] getAllCachedQuotes() {
         var tmpQuotes = new ArrayList<Quote>();
         var keys = cachedQuotes.keys("*");
@@ -62,7 +62,7 @@ public class QuoteController {
         return tmpQuotes.toArray(new Quote[]{});
     }
 
-    @PostMapping("/update-backup-cache/{symbol}")
+    @PostMapping("/{symbol}")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void updateCache(@PathVariable String symbol, @RequestParam double price) {
         log.info("updating backup cache ");
@@ -71,7 +71,7 @@ public class QuoteController {
         );
     }
 
-    @GetMapping("/get-stock-quote/{symbol}")
+    @GetMapping("/{symbol}")
     public Quote getStockQuote(@PathVariable String symbol) throws Exception {
         var testStockQuoteFunction = stockQuoteTestFunctions.get(symbol.toLowerCase());
         if (testStockQuoteFunction != null)
@@ -89,7 +89,6 @@ public class QuoteController {
         setInRedisWithTimeout(symbol, encryptor.encrypt(quote.toJson()));
         return quote;
     }
-
 
     private void fillStockQuoteTestFunctions() {
         stockQuoteTestFunctions = new HashMap<>() {{

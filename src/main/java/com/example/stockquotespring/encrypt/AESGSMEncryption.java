@@ -1,5 +1,6 @@
 package com.example.stockquotespring.encrypt;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 
 import javax.crypto.Cipher;
@@ -16,6 +17,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Base64;
 
+@Slf4j
 public class AESGSMEncryption implements Encryptor {
 
     private static final String GSM_ALGORITHM = "AES/GCM/NoPadding";
@@ -24,6 +26,7 @@ public class AESGSMEncryption implements Encryptor {
     private final String password;
 
     public AESGSMEncryption(Environment env) {
+        log.info("Using AESGSMEncryption");
         password = env.getProperty("app.encryption.password");
         assert password != null;
     }

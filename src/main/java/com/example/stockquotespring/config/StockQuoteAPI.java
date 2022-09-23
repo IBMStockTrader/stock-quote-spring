@@ -13,6 +13,7 @@ public class StockQuoteAPI {
     private final RestTemplate restTemplate;
     @Value("${app.stock-quote-api.url}")
     private String stockQuoteApiUrl;
+
     @Autowired
     public StockQuoteAPI(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -20,6 +21,11 @@ public class StockQuoteAPI {
 
     public Quote getQuote(String symbol) {
         log.info("Getting stock quote from API");
-        return restTemplate.getForObject(stockQuoteApiUrl, Quote.class, symbol);
+        try {
+            return restTemplate.getForObject(stockQuoteApiUrl, Quote.class, symbol);
+        } catch (Exception e) {
+            log.error("Error during GET to stock quote API " + stockQuoteApiUrl + " - returning test quote");
+            return Quote.getTestQuote();
+        }
     }
 }
