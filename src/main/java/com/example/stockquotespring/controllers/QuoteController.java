@@ -5,9 +5,8 @@ import com.example.stockquotespring.config.StockQuoteAPI;
 import com.example.stockquotespring.encrypt.Encryptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @Slf4j
@@ -27,17 +27,17 @@ public class QuoteController {
     private static final String FAIL_SYMBOL = "FAIL";
     private static final String SLOW_SYMBOL = "SLOW";
     private static final long SLOW_TIME = 60000;
-    private static final long cache_interval = 60;
-    private static final long MINUTE_IN_MILLISECONDS = 60000;
     private static Map<String, Quote> backUpCache;
     private static Map<String, Function<String, Quote>> stockQuoteTestFunctions;
     private final RedisTemplate<String, String> cachedQuotes;
     private final StockQuoteAPI stockQuoteAPI;
     private final Encryptor encryptor;
+    @Value("${app.redis.ttl-seconds}")
+    private long cacheDuration;
 
     @Autowired
     public QuoteController(RedisTemplate<String, String> cachedQuotes, StockQuoteAPI stockQuoteAPI,
-                           @Qualifier("springSecurityEncryptor") Encryptor encryptor) {
+                           Encryptor encryptor) {
         this.cachedQuotes = cachedQuotes;
         this.stockQuoteAPI = stockQuoteAPI;
         this.encryptor = encryptor;
@@ -80,28 +80,16 @@ public class QuoteController {
     }
 
     private Quote getStockQuoteFromAPI(String symbol) throws Exception {
-        if (Boolean.TRUE.equals(cachedQuotes.hasKey(symbol))) {
-            return getQuoteFromCache(symbol);
+        var isInRedis = Boolean.TRUE.equals(cachedQuotes.hasKey(symbol));
+        if (isInRedis) {
+            log.info("Getting quote from redis");
+            return Quote.fromJson(encryptor.decrypt(getFromRedis(symbol)));
         }
         var quote = stockQuoteAPI.getQuote(symbol);
-        setInRedis(symbol, encryptor.encrypt(quote.toJson()));
+        setInRedisWithTimeout(symbol, encryptor.encrypt(quote.toJson()));
         return quote;
     }
 
-    private Quote getQuoteFromCache(String symbol) throws Exception {
-        log.info("Getting stock quote from cache");
-        var quote = Quote.fromJson(encryptor.decrypt(getFromRedis(symbol)));
-        if (quote.isStale(cache_interval * MINUTE_IN_MILLISECONDS)) {
-            log.info("Quote extracted from cache but is stale");
-            quote = stockQuoteAPI.getQuote(symbol);
-            quote.setTime(System.currentTimeMillis());
-
-            setInRedis(symbol, encryptor.encrypt(quote.toJson()));
-            backUpCache.put(symbol, quote);
-            return quote;
-        }
-        return quote;
-    }
 
     private void fillStockQuoteTestFunctions() {
         stockQuoteTestFunctions = new HashMap<>() {{
@@ -113,8 +101,8 @@ public class QuoteController {
         }};
     }
 
-    private void setInRedis(String key, String input) {
-        cachedQuotes.opsForValue().setIfAbsent(key, input);
+    private void setInRedisWithTimeout(String key, String input) {
+        cachedQuotes.opsForValue().set(key, input, cacheDuration, TimeUnit.SECONDS);
     }
 
     private String getFromRedis(String key) {

@@ -22,13 +22,6 @@ public class Quote {
     private String symbol;
     private double price;
     private String date;
-    private long time = 0;
-
-    public Quote(String symbol, double price, String date) {
-        this.symbol = symbol;
-        this.price = price;
-        this.date = date;
-    }
 
     public static Quote getSlowQuote(long slowTime) {
         try {
@@ -45,15 +38,6 @@ public class Quote {
 
     public static Quote fromJson(String s) throws IOException {
         return (new ObjectMapper()).readValue(s, Quote.class);
-    }
-
-    public boolean isStale(long duration) {
-        long now = System.currentTimeMillis();
-        long then = getTime();
-        if (then == 0)
-            return true; //no time value present in quote
-        long difference = now - then;
-        return (difference > duration);
     }
 
     public String toJson() throws JsonProcessingException {

@@ -1,9 +1,6 @@
 package com.example.stockquotespring.encrypt;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKeyFactory;
@@ -19,15 +16,13 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Base64;
 
-@Component("aesGsmEncryptor")
 public class AESGSMEncryption implements Encryptor {
 
     private static final String GSM_ALGORITHM = "AES/GCM/NoPadding";
     private Key key;
     private IvParameterSpec initialVector;
-    private String password;
+    private final String password;
 
-    @Autowired
     public AESGSMEncryption(Environment env) {
         password = env.getProperty("app.encryption.password");
         assert password != null;
