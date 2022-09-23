@@ -2,10 +2,12 @@ package com.example.stockquotespring.controllers;
 
 import com.example.stockquotespring.Quote;
 import com.example.stockquotespring.config.StockQuoteAPI;
+import com.example.stockquotespring.encrypt.Encryptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -30,14 +32,15 @@ public class QuoteController {
     private static Map<String, Quote> backUpCache;
     private static Map<String, Function<String, Quote>> stockQuoteTestFunctions;
     private final RedisTemplate<String, String> cachedQuotes;
-
     private final StockQuoteAPI stockQuoteAPI;
-
+    private final Encryptor encryptor;
 
     @Autowired
-    public QuoteController(RedisTemplate<String, String> cachedQuotes, StockQuoteAPI stockQuoteAPI) {
+    public QuoteController(RedisTemplate<String, String> cachedQuotes, StockQuoteAPI stockQuoteAPI,
+                           @Qualifier("springSecurityEncryptor") Encryptor encryptor) {
         this.cachedQuotes = cachedQuotes;
         this.stockQuoteAPI = stockQuoteAPI;
+        this.encryptor = encryptor;
         if (backUpCache == null)
             backUpCache = new HashMap<>();
         if (stockQuoteTestFunctions == null)
@@ -59,7 +62,7 @@ public class QuoteController {
         return tmpQuotes.toArray(new Quote[]{});
     }
 
-    @PostMapping("/{symbol}")
+    @PostMapping("/update-backup-cache/{symbol}")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void updateCache(@PathVariable String symbol, @RequestParam double price) {
         log.info("updating backup cache ");
@@ -68,12 +71,36 @@ public class QuoteController {
         );
     }
 
-    @GetMapping("/{symbol}")
-    public Quote getStockQuote(@PathVariable String symbol) throws IOException {
+    @GetMapping("/get-stock-quote/{symbol}")
+    public Quote getStockQuote(@PathVariable String symbol) throws Exception {
         var testStockQuoteFunction = stockQuoteTestFunctions.get(symbol.toLowerCase());
         if (testStockQuoteFunction != null)
             return testStockQuoteFunction.apply(symbol);
         return getStockQuoteFromAPI(symbol);
+    }
+
+    private Quote getStockQuoteFromAPI(String symbol) throws Exception {
+        if (Boolean.TRUE.equals(cachedQuotes.hasKey(symbol))) {
+            return getQuoteFromCache(symbol);
+        }
+        var quote = stockQuoteAPI.getQuote(symbol);
+        setInRedis(symbol, encryptor.encrypt(quote.toJson()));
+        return quote;
+    }
+
+    private Quote getQuoteFromCache(String symbol) throws Exception {
+        log.info("Getting stock quote from cache");
+        var quote = Quote.fromJson(encryptor.decrypt(getFromRedis(symbol)));
+        if (quote.isStale(cache_interval * MINUTE_IN_MILLISECONDS)) {
+            log.info("Quote extracted from cache but is stale");
+            quote = stockQuoteAPI.getQuote(symbol);
+            quote.setTime(System.currentTimeMillis());
+
+            setInRedis(symbol, encryptor.encrypt(quote.toJson()));
+            backUpCache.put(symbol, quote);
+            return quote;
+        }
+        return quote;
     }
 
     private void fillStockQuoteTestFunctions() {
@@ -86,24 +113,11 @@ public class QuoteController {
         }};
     }
 
-    private Quote getStockQuoteFromAPI(String symbol) throws IOException {
-        if (cachedQuotes.hasKey(symbol)) {
-            var quote = Quote.fromJson(cachedQuotes.opsForValue().get(symbol));
-            if (quote.isStale(cache_interval * MINUTE_IN_MILLISECONDS)) {
-                quote = stockQuoteAPI.getQuote(symbol);
-                quote.setTime(System.currentTimeMillis());
-
-                cachedQuotes.opsForValue().append(symbol, quote.toJson());
-                backUpCache.put(symbol, quote);
-                return quote;
-            }
-            return quote;
-        }
-
-        var quote = stockQuoteAPI.getQuote(symbol);
-        cachedQuotes.opsForValue().append(symbol, quote.toJson());
-        return quote;
+    private void setInRedis(String key, String input) {
+        cachedQuotes.opsForValue().setIfAbsent(key, input);
     }
 
-
+    private String getFromRedis(String key) {
+        return cachedQuotes.opsForValue().get(key);
+    }
 }

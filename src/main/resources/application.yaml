@@ -1,0 +1,3 @@
+app:
+  encryption:
+    password: "1234"
