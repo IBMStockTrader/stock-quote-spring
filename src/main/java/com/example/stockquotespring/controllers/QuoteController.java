@@ -82,7 +82,7 @@ public class QuoteController {
     private Quote getStockQuoteFromAPI(String symbol) throws Exception {
         var isInRedis = Boolean.TRUE.equals(cachedQuotes.hasKey(symbol));
         if (isInRedis) {
-            log.info("Getting quote from redis");
+            log.info("Getting quote from redis - symbol: " + symbol);
             return Quote.fromJson(encryptor.decrypt(getFromRedis(symbol)));
         }
         var quote = stockQuoteAPI.getQuote(symbol);
