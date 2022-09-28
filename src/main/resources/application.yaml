@@ -1,10 +1,31 @@
 app:
   encryption:
     password: "1234"
-    type: springSecurityEncryptor #it could be springSecurityEncryptor or aesGsmEncryptor
+    type: springSecurityBytesEncryptor #it could be springSecurityBytesEncryptor, aesGsmEncryptor or springSecurityTextEncryptor
 
   stock-quote-api:
     url: https://gd5tqp34ng.execute-api.us-east-2.amazonaws.com/default/GetStockQuote/{symbol}
 
   redis:
-    ttl-seconds: 60
+    ttl-seconds: 3600
+
+logging:
+  file: application.log
+#  level:
+#    com:
+#      example:
+#        stockquotespring: INFO
+
+
+info:
+  app:
+    name: stock-quote
+    description: Stock Quote microservice
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        health: /health
+

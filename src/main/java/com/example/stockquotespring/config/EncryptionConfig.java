@@ -2,7 +2,8 @@ package com.example.stockquotespring.config;
 
 import com.example.stockquotespring.encrypt.AESGSMEncryption;
 import com.example.stockquotespring.encrypt.Encryptor;
-import com.example.stockquotespring.encrypt.SpringSecurityEncryptor;
+import com.example.stockquotespring.encrypt.SpringSecurityBytesEncryptor;
+import com.example.stockquotespring.encrypt.SpringSecurityTextEncryptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -26,8 +27,14 @@ public class EncryptionConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "app.encryption.type", havingValue = "springSecurityEncryptor")
-    public Encryptor springSecurityEncryptor() {
-        return new SpringSecurityEncryptor(environment);
+    @ConditionalOnProperty(name = "app.encryption.type", havingValue = "springSecurityBytesEncryptor")
+    public Encryptor springSecurityBytesEncryptor() {
+        return new SpringSecurityBytesEncryptor(environment);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.encryption.type", havingValue = "springSecurityTextEncryptor")
+    public Encryptor springSecurityTextEncryptor() {
+        return new SpringSecurityTextEncryptor(environment);
     }
 }
