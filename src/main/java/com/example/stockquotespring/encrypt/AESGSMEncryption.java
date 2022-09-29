@@ -20,12 +20,19 @@ import java.util.Base64;
 @Slf4j
 public class AESGSMEncryption implements Encryptor {
 
+    private static AESGSMEncryption encryption;
     private static final String GSM_ALGORITHM = "AES/GCM/NoPadding";
     private Key key;
     private IvParameterSpec initialVector;
     private final String password;
 
-    public AESGSMEncryption(Environment env) {
+    public static synchronized AESGSMEncryption getInstance(Environment env) {
+        if (encryption == null)
+            encryption = new AESGSMEncryption(env);
+        return encryption;
+    }
+
+    private AESGSMEncryption(Environment env) {
         log.info("Using AESGSMEncryption");
         password = env.getProperty("app.encryption.password");
         assert password != null;
@@ -36,13 +43,16 @@ public class AESGSMEncryption implements Encryptor {
             Cipher cipher = Cipher.getInstance(GSM_ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, getKey(), getGcmParamSpecification());
             byte[] cipherText = cipher.doFinal(input.getBytes());
-            return new String(Base64.getEncoder().encode(cipherText));
+            var encodedIn64 = Base64.getEncoder().encodeToString(cipherText);
+            log.info("Encoded in base 64 - {}", encodedIn64);
+            return encodedIn64;
         } catch (Exception e) {
             throw new AESException(e.getMessage());
         }
     }
 
     public String decrypt(String cipherTextInBase64) throws AESException {
+        log.info("decrypting base 64 - {}", cipherTextInBase64);
         try {
             Cipher cipher = Cipher.getInstance(GSM_ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, getKey(), getGcmParamSpecification());
