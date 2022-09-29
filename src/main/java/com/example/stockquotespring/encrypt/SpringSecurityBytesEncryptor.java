@@ -21,8 +21,7 @@ public class SpringSecurityBytesEncryptor implements Encryptor {
 
     @Override
     public String encrypt(String input) {
-        var cipherText = encryptor.encrypt(input.getBytes());
-        var encodedIn64 = Base64.getEncoder().encodeToString(cipherText);
+        var encodedIn64 = Base64.getEncoder().encodeToString(encryptor.encrypt(input.getBytes()));
         log.info("encrypting in base 64 - {}", encodedIn64);
         return encodedIn64;
 
