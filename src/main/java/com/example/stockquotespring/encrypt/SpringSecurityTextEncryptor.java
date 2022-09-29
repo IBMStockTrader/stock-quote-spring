@@ -22,7 +22,7 @@ public class SpringSecurityTextEncryptor implements Encryptor {
     @Override
     public String encrypt(String input) {
         var encodedIn64 = Base64.getEncoder().encodeToString(encryptor.encrypt(input).getBytes());
-        log.info("Encoded in base 64 - {}", encodedIn64);
+        log.info("encrypting in base 64 - {}", encodedIn64);
         return encodedIn64;
     }
 

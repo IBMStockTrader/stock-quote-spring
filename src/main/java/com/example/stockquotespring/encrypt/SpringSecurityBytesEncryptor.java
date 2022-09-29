@@ -23,7 +23,7 @@ public class SpringSecurityBytesEncryptor implements Encryptor {
     public String encrypt(String input) {
         var cipherText = encryptor.encrypt(input.getBytes());
         var encodedIn64 = Base64.getEncoder().encodeToString(cipherText);
-        log.info("Encoded in base 64 - {}", encodedIn64);
+        log.info("encrypting in base 64 - {}", encodedIn64);
         return encodedIn64;
 
     }

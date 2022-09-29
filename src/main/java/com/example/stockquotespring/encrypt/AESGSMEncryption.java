@@ -10,10 +10,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Base64;
 
@@ -22,29 +20,30 @@ public class AESGSMEncryption implements Encryptor {
 
     private static AESGSMEncryption encryption;
     private static final String GSM_ALGORITHM = "AES/GCM/NoPadding";
-    private Key key;
-    private IvParameterSpec initialVector;
-    private final String password;
+    private final Key key;
+    private final IvParameterSpec initialVector;
 
-    public static synchronized AESGSMEncryption getInstance(Environment env) {
+    public static AESGSMEncryption getInstance(Environment env) throws AESException {
         if (encryption == null)
             encryption = new AESGSMEncryption(env);
         return encryption;
     }
 
-    private AESGSMEncryption(Environment env) {
+    private AESGSMEncryption(Environment env) throws AESException {
         log.info("Using AESGSMEncryption");
-        password = env.getProperty("app.encryption.password");
+        String password = env.getProperty("app.encryption.password");
         assert password != null;
+        initialVector = generateInitialVector(96);
+        key = getKeyFromPassword(password, generateSecureRandomBytes(8));
     }
 
     public String encrypt(String input) throws AESException {
         try {
             Cipher cipher = Cipher.getInstance(GSM_ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, getKey(), getGcmParamSpecification());
+            cipher.init(Cipher.ENCRYPT_MODE, key, getGcmParamSpecification());
             byte[] cipherText = cipher.doFinal(input.getBytes());
             var encodedIn64 = Base64.getEncoder().encodeToString(cipherText);
-            log.info("Encoded in base 64 - {}", encodedIn64);
+            log.info("encrypting in base 64 - {}", encodedIn64);
             return encodedIn64;
         } catch (Exception e) {
             throw new AESException(e.getMessage());
@@ -55,7 +54,7 @@ public class AESGSMEncryption implements Encryptor {
         log.info("decrypting base 64 - {}", cipherTextInBase64);
         try {
             Cipher cipher = Cipher.getInstance(GSM_ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, getKey(), getGcmParamSpecification());
+            cipher.init(Cipher.DECRYPT_MODE, key, getGcmParamSpecification());
             byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(cipherTextInBase64.getBytes()));
             return new String(plainText);
         } catch (Exception e) {
@@ -64,30 +63,22 @@ public class AESGSMEncryption implements Encryptor {
     }
 
     private AlgorithmParameterSpec getGcmParamSpecification() {
-        return new GCMParameterSpec(128, getInitialVector().getIV());
+        return new GCMParameterSpec(128, initialVector.getIV());
     }
 
-    private Key getKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        if (key == null)
-            key = getKeyFromPassword(password, generateSecureRandomBytes(8));
-        return key;
-    }
-
-    private IvParameterSpec getInitialVector() {
-        if (initialVector == null)
-            initialVector = generateInitialVector(96);
-        return initialVector;
-    }
 
     private IvParameterSpec generateInitialVector(int byteNum) {
         return new IvParameterSpec(generateSecureRandomBytes(byteNum));
     }
 
-    private Key getKeyFromPassword(String password, byte[] salt)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, 256);
-        return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+    private Key getKeyFromPassword(String password, byte[] salt) throws AESException {
+        try {
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, 256);
+            return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+        } catch (Exception e) {
+            throw new AESException(e.getMessage());
+        }
     }
 
     private byte[] generateSecureRandomBytes(int byteNum) {

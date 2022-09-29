@@ -19,7 +19,7 @@ public class EncryptionConfig {
 
     @Bean
     @ConditionalOnProperty(name = "app.encryption.type", havingValue = "aesGsmEncryptor")
-    public Encryptor aesGsmEncryptor() {
+    public Encryptor aesGsmEncryptor() throws AESException {
         return AESGSMEncryption.getInstance(environment);
     }
 
