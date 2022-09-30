@@ -6,8 +6,6 @@ import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 
-import java.util.Base64;
-
 @Slf4j
 public class SpringSecurityTextEncryptor implements Encryptor {
     private final TextEncryptor encryptor;
@@ -21,18 +19,14 @@ public class SpringSecurityTextEncryptor implements Encryptor {
 
     @Override
     public String encrypt(String input) {
-        var encodedIn64 = Base64.getEncoder().encodeToString(encryptor.encrypt(input).getBytes());
-        log.info("encrypting in base 64 - {}", encodedIn64);
-        return encodedIn64;
+        var cipherInput = encryptor.encrypt(input);
+        log.info("ciphered input {}", cipherInput);
+        return cipherInput;
     }
 
     @Override
-    public String decrypt(String cipherTextInBase64) {
-        log.info("decrypting base 64 - {}", cipherTextInBase64);
-        return encryptor.decrypt(
-                new String(
-                        Base64.getDecoder().decode(cipherTextInBase64.getBytes())
-                )
-        );
+    public String decrypt(String cipherText) {
+        log.info("decrypting ciphered - {}", cipherText);
+        return encryptor.decrypt(cipherText);
     }
 }
