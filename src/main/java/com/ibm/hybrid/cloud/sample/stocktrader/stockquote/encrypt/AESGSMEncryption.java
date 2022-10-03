@@ -79,7 +79,6 @@ public class AESGSMEncryption implements Encryptor {
         return new GCMParameterSpec(128, initialVector.getIV());
     }
 
-
     private IvParameterSpec generateInitialVector(int byteNum) {
         return new IvParameterSpec(generateSecureRandomBytes(byteNum));
     }

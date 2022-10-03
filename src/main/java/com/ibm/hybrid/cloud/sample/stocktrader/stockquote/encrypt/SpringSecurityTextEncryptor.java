@@ -27,7 +27,12 @@ public class SpringSecurityTextEncryptor implements Encryptor {
         log.info("Using SpringSecurityTextEncryptor");
         var password = env.getProperty("app.encryption.password");
         assert password != null;
-        encryptor = Encryptors.text(password, KeyGenerators.string().generateKey());
+        if (env.getProperty("app.encryption.saltBytes") != null) {
+            log.info("using with salt bytes from env");
+            encryptor = Encryptors.text(password, env.getProperty("app.encryption.saltBytes"));
+        } else {
+            encryptor = Encryptors.text(password, KeyGenerators.string().generateKey());
+        }
     }
 
     @Override
