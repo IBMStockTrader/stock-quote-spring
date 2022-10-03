@@ -19,16 +19,20 @@
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
     <dependencies>
+
+        <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!--Explicitly defined lombok version in order to work with this spring boot version-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -36,23 +40,27 @@
             <scope>provided</scope>
         </dependency>
 
+        <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!--Explicitly defined version according to https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter-->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-data-20</artifactId>
             <version>3.17.6</version>
         </dependency>
 
+        <!--Explicitly defined version according to https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter-->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
             <version>3.17.6</version>
         </dependency>
 
+        <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -66,6 +74,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
@@ -76,12 +85,15 @@
     <build>
         <plugins>
             <plugin>
+                <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <configuration>
-                            <mainClass>com.ibm.hybrid.cloud.sample.stocktrader.stockquote.StockQuoteSpringApplication</mainClass>
+                            <mainClass>
+                                com.ibm.hybrid.cloud.sample.stocktrader.stockquote.StockQuoteSpringApplication
+                            </mainClass>
                         </configuration>
                     </execution>
                 </executions>
