@@ -29,7 +29,15 @@ public class SpringSecurityBytesEncryptor implements Encryptor {
         log.info("Using SpringSecurityBytesEncryptor");
         var password = env.getProperty("app.encryption.password");
         assert password != null;
-        encryptor = Encryptors.standard(password, KeyGenerators.string().generateKey());
+        if (env.getProperty("saltBytes") != null) {
+
+
+            log.info("using with salt bytes and iv bytes");
+            encryptor = Encryptors.standard(password, env.getProperty("saltBytes"));
+        } else {
+            log.info("using default constructor");
+            encryptor = Encryptors.standard(password, KeyGenerators.string().generateKey());
+        }
     }
 
     @Override
@@ -48,4 +56,15 @@ public class SpringSecurityBytesEncryptor implements Encryptor {
                 )
         );
     }
+
+    private BytesEncryptor getEncryptor() {
+        try {
+            var aesClass = Class.forName("org.springframework.security.crypto.encrypt.AesBytesEncryptor");
+            aesClass.getConstructor();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
 }

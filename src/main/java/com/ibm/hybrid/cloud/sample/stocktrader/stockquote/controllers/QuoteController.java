@@ -35,6 +35,7 @@ import java.util.function.Function;
 
 @Slf4j
 @RestController
+@RequestMapping("stock-quote")
 public class QuoteController {
     private static final String TEST_SYMBOL = "TEST";
     private static final String FAIL_SYMBOL = "FAIL";

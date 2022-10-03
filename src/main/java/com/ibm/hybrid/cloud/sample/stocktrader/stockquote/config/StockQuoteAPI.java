@@ -35,7 +35,8 @@ public class StockQuoteAPI {
     public Quote getQuote(String symbol) {
         log.info("Getting stock quote from API");
         try {
-            return restTemplate.getForObject(stockQuoteApiUrl, Quote.class, symbol);
+            return new Quote(symbol, 12.4, "2021-02-01");
+//            return restTemplate.getForObject(stockQuoteApiUrl, Quote.class, symbol);
         } catch (Exception e) {
             log.error("Error during GET to stock quote API " + stockQuoteApiUrl + " - returning test quote");
             return Quote.getTestQuote();
