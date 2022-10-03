@@ -14,6 +14,7 @@
 package com.ibm.hybrid.cloud.sample.stocktrader.stockquote;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ import java.util.Date;
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(value = "time")
 public class Quote {
     private static final String TEST_SYMBOL = "TEST";
     private static final double TEST_PRICE = 123.45;
