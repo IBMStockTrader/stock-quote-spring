@@ -81,7 +81,7 @@
                 <executions>
                     <execution>
                         <configuration>
-                            <mainClass>com.example.stockquotespring.StockQuoteSpringApplication</mainClass>
+                            <mainClass>com.ibm.hybrid.cloud.sample.stocktrader.stockquote.StockQuoteSpringApplication</mainClass>
                         </configuration>
                     </execution>
                 </executions>
