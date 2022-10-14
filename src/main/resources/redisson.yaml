@@ -1,5 +1,5 @@
 singleServerConfig:
-  address: "redis://quote_redis:6379"
+  address: "${REDIS_URL}"
 
 #  clusterServersConfig:
 #    idleConnectionTimeout: 10000
