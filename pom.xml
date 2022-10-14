@@ -57,7 +57,7 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
-            <version>3.17.6</version>
+            <version>3.15.0</version>
         </dependency>
 
         <!--It is using version from parent spring-boot parent pom which is 2.0.2.RELEASE-->
