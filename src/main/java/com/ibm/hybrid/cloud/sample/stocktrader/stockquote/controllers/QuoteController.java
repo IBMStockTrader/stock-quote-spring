@@ -13,21 +13,22 @@
 
 package com.ibm.hybrid.cloud.sample.stocktrader.stockquote.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.Quote;
 import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.config.StockQuoteAPI;
 import com.ibm.hybrid.cloud.sample.stocktrader.stockquote.encrypt.Encryptor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -37,28 +38,27 @@ import java.util.function.Function;
 @RestController
 @RequestMapping("stock-quote")
 public class QuoteController {
+
     private static final String TEST_SYMBOL = "TEST";
     private static final String FAIL_SYMBOL = "FAIL";
     private static final String SLOW_SYMBOL = "SLOW";
     private static final long SLOW_TIME = 60000;
-    private static Map<String, Quote> backUpCache;
     private static Map<String, Function<String, Quote>> stockQuoteTestFunctions;
     private final RedisTemplate<String, String> cachedQuotes;
     private final StockQuoteAPI stockQuoteAPI;
     private final Encryptor encryptor;
+    private static String dummyText = "dummy test";
     @Value("${app.redis.ttl-seconds}")
     private long cacheDuration;
 
     @Autowired
     public QuoteController(RedisTemplate<String, String> cachedQuotes, StockQuoteAPI stockQuoteAPI,
-                           Encryptor encryptor) {
+                           Encryptor encryptor, Environment env) throws IOException {
         this.cachedQuotes = cachedQuotes;
         this.stockQuoteAPI = stockQuoteAPI;
         this.encryptor = encryptor;
-        if (backUpCache == null)
-            backUpCache = new HashMap<>();
-        if (stockQuoteTestFunctions == null)
-            fillStockQuoteTestFunctions();
+        configTestQuoteFunctions();
+        setDummyText(env);
     }
 
     @GetMapping("/")
@@ -76,15 +76,6 @@ public class QuoteController {
         return tmpQuotes.toArray(new Quote[]{});
     }
 
-    @PostMapping("/{symbol}")
-    @ResponseStatus(value = HttpStatus.NO_CONTENT)
-    public void updateCache(@PathVariable String symbol, @RequestParam double price) {
-        log.info("updating backup cache ");
-        backUpCache.put(symbol,
-                new Quote(symbol, price, new SimpleDateFormat("yyyy-MM-dd").format(new Date()))
-        );
-    }
-
     @GetMapping("/{symbol}")
     public Quote getStockQuote(@PathVariable String symbol) throws Exception {
         var testStockQuoteFunction = stockQuoteTestFunctions.get(symbol.toLowerCase());
@@ -97,9 +88,12 @@ public class QuoteController {
         var isInRedis = Boolean.TRUE.equals(cachedQuotes.hasKey(symbol));
         if (isInRedis) {
             log.info("Getting quote from redis - symbol: " + symbol);
-            return Quote.fromJson(encryptor.decrypt(getFromRedis(symbol)));
+            return Quote.fromJson(
+                    encryptor.decrypt(getFromRedis(symbol))
+            );
         }
         var quote = stockQuoteAPI.getQuote(symbol);
+        quote.setDummy(dummyText);
         setInRedisWithTimeout(symbol, encryptor.encrypt(quote.toJson()));
         return quote;
     }
@@ -120,5 +114,17 @@ public class QuoteController {
 
     private String getFromRedis(String key) {
         return cachedQuotes.opsForValue().get(key);
+    }
+
+    private void configTestQuoteFunctions() {
+        if (stockQuoteTestFunctions == null)
+            fillStockQuoteTestFunctions();
+    }
+
+    private void setDummyText(Environment env) throws IOException {
+        if (env.getProperty("app.use-dummy-text") != null && env.getProperty("app.use-dummy-text").equals("true")) {
+            var dummyTextStream = getClass().getClassLoader().getResourceAsStream("static/lorem.txt");
+            dummyText = new String(dummyTextStream.readAllBytes());
+        }
     }
 }

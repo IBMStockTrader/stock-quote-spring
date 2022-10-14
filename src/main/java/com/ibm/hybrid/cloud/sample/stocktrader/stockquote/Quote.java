@@ -17,7 +17,6 @@ package com.ibm.hybrid.cloud.sample.stocktrader.stockquote;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import java.util.Date;
 @Data
 @Slf4j
 @NoArgsConstructor
-@AllArgsConstructor
 @JsonIgnoreProperties(value = "time")
 public class Quote {
     private static final String TEST_SYMBOL = "TEST";
@@ -37,6 +35,7 @@ public class Quote {
     private String symbol;
     private double price;
     private String date;
+    private String dummy;
 
     public static Quote getSlowQuote(long slowTime) {
         try {
@@ -45,6 +44,13 @@ public class Quote {
             log.error("Error getting slow quote");
         }
         return getTestQuote();
+    }
+
+    public Quote(String symbol, double price, String date) {
+        this.symbol = symbol;
+        this.price = price;
+        this.date = date;
+
     }
 
     public static Quote getTestQuote() {
