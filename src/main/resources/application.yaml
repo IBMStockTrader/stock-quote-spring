@@ -10,6 +10,8 @@ app:
   redis:
     ttl-seconds: 3600
 
+  use-dummy-text: true
+
 server:
   port: 9080
 
