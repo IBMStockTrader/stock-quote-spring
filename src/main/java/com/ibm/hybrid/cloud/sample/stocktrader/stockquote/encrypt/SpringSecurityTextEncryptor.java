@@ -38,13 +38,13 @@ public class SpringSecurityTextEncryptor implements Encryptor {
     @Override
     public String encrypt(String input) {
         var cipherInput = encryptor.encrypt(input);
-        log.info("ciphered input {}", cipherInput);
+        log.info("ciphered input {} ...", cipherInput.substring(0, 30));
         return cipherInput;
     }
 
     @Override
     public String decrypt(String cipherText) {
-        log.info("decrypting ciphered - {}", cipherText);
+        log.info("decrypting ciphered - {}", cipherText.substring(0, 30));
         return encryptor.decrypt(cipherText);
     }
 }
