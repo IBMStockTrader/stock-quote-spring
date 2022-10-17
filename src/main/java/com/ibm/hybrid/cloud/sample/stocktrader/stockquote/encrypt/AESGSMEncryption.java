@@ -65,7 +65,7 @@ public class AESGSMEncryption implements Encryptor {
             byte[] cipherText = cipher.doFinal(input.getBytes());
             var cipherTextWithIvBytes = EncodingUtils.concatenate(ivBytes, cipherText);
             var encodedIn64 = Base64.getEncoder().encodeToString(cipherTextWithIvBytes);
-            log.info("encrypting in base 64 - {}", encodedIn64);
+            log.info("encrypting in base 64 - {} ...", encodedIn64.substring(0, 30));
             return encodedIn64;
         } catch (Exception e) {
             throw new AESException(e.getMessage());
@@ -73,7 +73,7 @@ public class AESGSMEncryption implements Encryptor {
     }
 
     public String decrypt(String cipherTextInBase64) throws AESException {
-        log.info("decrypting base 64 - {}", cipherTextInBase64);
+        log.info("decrypting base 64 - {} ...", cipherTextInBase64.substring(0, 30));
         try {
             var cipherBytesWithIv = Base64.getDecoder().decode(cipherTextInBase64.getBytes());
             var ivBytes = getIvBytes(cipherBytesWithIv);
