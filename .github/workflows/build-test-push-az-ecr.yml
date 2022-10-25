@@ -1,0 +1,87 @@
+name: Build, Push to Azure CR, Gitops
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '.github/**'
+    release:
+      types: [ created ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      # checkout the repo
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v2
+
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 'Build and push image'
+        uses: azure/docker-login@v1
+        env:
+          IMAGE_TAG: ${{github.sha}}
+          ACR_REPOSITORY: ibmstocktrader/stock-quote
+          ACR_REGISTRY: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - run: |
+          docker build . -t $ACR_REGISTRY/$ACR_REPOSITORY:$IMAGE_TAG \
+            --build-arg GITHUB_SHA="$GITHUB_SHA" \
+            --build-arg GITHUB_REF="$GITHUB_REF" .
+          docker push $ACR_REGISTRY/$ACR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ACR_REGISTRY/$ACR_REPOSITORY:$IMAGE_TAG"
+
+  update-gitops-repo:
+    name: Publish image updates to gitops repo
+    runs-on: ubuntu-latest
+    needs: [ build-and-deploy ]
+    steps:
+
+      # Checkout gitops repo
+      - name: Checkout gitops repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{env.GITOPS_REPO}}
+          path: gitops
+          token: ${{secrets.GITOPS_TOKEN}}
+
+      # Update application
+      - name: Update application
+        run: |
+          set -x
+          set +e
+          ls -la
+          ls -la gitops
+          cd gitops
+          
+          ## update manifests to new image and tag
+          APP_IMAGE="$ACR_REGISTRY/$ACR_REPOSITORY"
+          VERSION="$GITHUB_SHA"
+          echo "image-registry-path: ${{needs.build-and-deploy.image-registry-path}}"
+          echo "${APP_IMAGE}"
+          echo "${VERSION}"
+          echo "print yq version"
+          yq --version
+          # yq w -i "${GITOPS_DIR}/stocktrader-aws-eks-cr.yml" spec.stock-quote.image.repository "${APP_IMAGE}"
+          yq e ".spec.stock-quote.image.repository = \"$APP_IMAGE\"" -i "${GITOPS_DIR}/stocktrader-aws-eks-cr.yml"
+          # yq w -i "${GITOPS_DIR}/stocktrader-aws-eks-cr.yml" spec.stock-quote.image.tag "${VERSION}"
+          yq e ".spec.stock-quote.image.tag = \"$VERSION\"" -i "${GITOPS_DIR}/stocktrader-aws-eks-cr.yml"
+          cat "${GITOPS_DIR}/stocktrader-aws-eks-cr.yml"          
+          if [[ $(git status -s | wc -l) -eq 0 ]]; then
+            echo "No changes"
+            exit 0
+          fi
+          git add "${GITOPS_DIR}/"
+          git config --global user.name 'GH Actions'
+          git config --global user.email 'github-actions@users.noreply.github.com'        
+          git commit -am "Updates ${APP_NAME} to ${VERSION}"   
+          git push https://$GITOPS_USERNAME:$GITOPS_TOKEN@github.com/$GITOPS_REPO 
