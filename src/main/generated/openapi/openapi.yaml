@@ -1,0 +1,46 @@
+---
+openapi: 3.1.0
+components:
+  schemas:
+    Quote:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+          format: double
+        date:
+          type: string
+        dummy:
+          type: string
+paths:
+  /stock-quote:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+  /stock-quote/{symbol}:
+    get:
+      parameters:
+      - name: symbol
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Quote"
+info:
+  title: Generated API
+  version: "1.0"
